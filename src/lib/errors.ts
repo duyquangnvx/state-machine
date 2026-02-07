@@ -11,3 +11,10 @@ export class MachineNotStartedError extends Error {
     this.name = "MachineNotStartedError";
   }
 }
+
+export class TransitionDeniedError extends Error {
+  constructor(from: string, to: string) {
+    super(`Transition denied: "${from}" -> "${to}"`);
+    this.name = "TransitionDeniedError";
+  }
+}

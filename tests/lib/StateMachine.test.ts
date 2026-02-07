@@ -3,6 +3,7 @@ import {
   BaseState,
   StateNotFoundError,
   MachineNotStartedError,
+  TransitionDeniedError,
   HierarchicalState,
 } from "../../src/lib/index.js";
 import type { StateMachineConfig } from "../../src/lib/index.js";
@@ -242,6 +243,99 @@ describe("StateMachine", () => {
     it("throws if machine not started", async () => {
       const sm = new StateMachine(createConfig());
       await expect(sm.update(1)).rejects.toThrow(MachineNotStartedError);
+    });
+  });
+
+  describe("canTransitionTo()", () => {
+    it("allows transition when canTransitionTo returns true", async () => {
+      const sm = new StateMachine(createConfig());
+      await sm.start();
+      await sm.transitionTo("walking");
+      expect(sm.currentStateId).toBe("walking");
+    });
+
+    it("throws TransitionDeniedError when canTransitionTo returns false", async () => {
+      class GuardedIdle extends BaseState<TestContext, TestStateId> {
+        readonly id = "idle" as const;
+        override canTransitionTo(target: TestStateId): boolean {
+          return target !== "running";
+        }
+      }
+      const sm = new StateMachine(
+        createConfig({
+          states: [
+            new GuardedIdle(),
+            new WalkingState(),
+            new RunningState(),
+            new StoppedState(),
+          ],
+        }),
+      );
+      await sm.start();
+      await expect(sm.transitionTo("running")).rejects.toThrow(
+        TransitionDeniedError,
+      );
+      expect(sm.currentStateId).toBe("idle");
+    });
+
+    it("blocks auto-transition from onUpdate when denied", async () => {
+      // WalkingState.onUpdate returns "running" when speed >= 5
+      // but we block that transition
+      class GuardedWalking extends BaseState<TestContext, TestStateId> {
+        readonly id = "walking" as const;
+        override canTransitionTo(target: TestStateId): boolean {
+          return target !== "running";
+        }
+        override onUpdate(ctx: TestContext, dt: number): TestStateId | undefined {
+          ctx.speed += dt;
+          if (ctx.speed >= 5) return "running";
+          return undefined;
+        }
+      }
+      const sm = new StateMachine(
+        createConfig({
+          states: [
+            new IdleState(),
+            new GuardedWalking(),
+            new RunningState(),
+            new StoppedState(),
+          ],
+        }),
+      );
+      await sm.start();
+      await sm.transitionTo("walking");
+      await expect(sm.update(10)).rejects.toThrow(TransitionDeniedError);
+      expect(sm.currentStateId).toBe("walking");
+    });
+
+    it("receives context for dynamic guard decisions", async () => {
+      class ContextGuardedIdle extends BaseState<TestContext, TestStateId> {
+        readonly id = "idle" as const;
+        override canTransitionTo(_target: TestStateId, ctx: TestContext): boolean {
+          return ctx.speed > 0;
+        }
+      }
+      const sm = new StateMachine(
+        createConfig({
+          states: [
+            new ContextGuardedIdle(),
+            new WalkingState(),
+            new RunningState(),
+            new StoppedState(),
+          ],
+        }),
+      );
+      await sm.start();
+
+      // speed=0, guard rejects
+      await expect(sm.transitionTo("walking")).rejects.toThrow(
+        TransitionDeniedError,
+      );
+
+      // speed>0, guard allows
+      sm.context.speed = 1;
+      await sm.transitionTo("walking");
+      expect(sm.currentStateId).toBe("walking");
     });
   });
 

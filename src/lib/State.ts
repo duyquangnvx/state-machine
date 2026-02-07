@@ -12,6 +12,10 @@ export abstract class BaseState<TContext, TStateId extends string>
 {
   abstract readonly id: TStateId;
 
+  canTransitionTo(_targetState: TStateId, _ctx: TContext): boolean {
+    return true;
+  }
+
   onEnter(_ctx: TContext, _prevState: TStateId | null): void | Promise<void> {
     // no-op
   }

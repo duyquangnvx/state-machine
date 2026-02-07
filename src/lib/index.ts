@@ -5,6 +5,7 @@ export { HierarchicalState } from "./HierarchicalState.js";
 export {
   StateNotFoundError,
   MachineNotStartedError,
+  TransitionDeniedError,
 } from "./errors.js";
 export type {
   IState,

@@ -5,7 +5,11 @@ import type {
   StateChangeEvent,
 } from "./interfaces.js";
 import { StateEventEmitter, type StateEventListener } from "./StateEvent.js";
-import { StateNotFoundError, MachineNotStartedError } from "./errors.js";
+import {
+  StateNotFoundError,
+  MachineNotStartedError,
+  TransitionDeniedError,
+} from "./errors.js";
 
 export class StateMachine<TContext, TStateId extends string>
   implements IStateMachine<TContext, TStateId>
@@ -66,6 +70,10 @@ export class StateMachine<TContext, TStateId extends string>
     if (!to) throw new StateNotFoundError(stateId);
 
     const from = this.currentState;
+    if (!from.canTransitionTo(stateId, this.context)) {
+      throw new TransitionDeniedError(from.id, stateId);
+    }
+
     const change: StateChangeEvent<TStateId> = {
       from: from.id,
       to: to.id,

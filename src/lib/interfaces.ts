@@ -7,6 +7,7 @@
  */
 export interface IState<TContext, TStateId extends string> {
   readonly id: TStateId;
+  canTransitionTo(targetState: TStateId, ctx: TContext): boolean;
   onEnter(ctx: TContext, prevState: TStateId | null): void | Promise<void>;
   onUpdate(ctx: TContext, dt: number): TStateId | undefined;
   onExit(ctx: TContext, nextState: TStateId | null): void | Promise<void>;
