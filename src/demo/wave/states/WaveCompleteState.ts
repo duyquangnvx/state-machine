@@ -5,7 +5,7 @@ import type { WaveStateId } from "../WaveEvents.js";
 export class WaveCompleteState extends BaseState<WaveContext, WaveStateId> {
   readonly id = "WAVE_COMPLETE" as const;
 
-  override onEnter(ctx: WaveContext): void {
+  override onEnter(ctx: WaveContext, _prevState: WaveStateId | null): void {
     ctx.score += ctx.currentWave * 50;
   }
 

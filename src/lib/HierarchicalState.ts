@@ -19,7 +19,7 @@ export abstract class HierarchicalState<
     ctx: TContext,
   ): StateMachineConfig<TContext, TChildStateId>;
 
-  override async onEnter(ctx: TContext): Promise<void> {
+  override async onEnter(ctx: TContext, _prevState: TStateId | null): Promise<void> {
     const config = this.createChildConfig(ctx);
     this.childMachine = new StateMachine(config);
     await this.childMachine.start();
@@ -32,7 +32,7 @@ export abstract class HierarchicalState<
     return undefined;
   }
 
-  override async onExit(_ctx: TContext): Promise<void> {
+  override async onExit(_ctx: TContext, _nextState: TStateId | null): Promise<void> {
     await this.childMachine?.stop();
     this.childMachine = null;
   }

@@ -5,7 +5,7 @@ import type { EnemyStateId } from "../EnemyEvents.js";
 export class EnemyAttackingState extends BaseState<EnemyContext, EnemyStateId> {
   readonly id = "ATTACKING" as const;
 
-  override onEnter(ctx: EnemyContext): void {
+  override onEnter(ctx: EnemyContext, _prevState: EnemyStateId | null): void {
     ctx.attackTimer = 0;
   }
 

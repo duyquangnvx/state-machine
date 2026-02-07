@@ -5,7 +5,7 @@ import type { SlotStateId } from "../SlotStateId.js";
 export class SpinningState extends BaseState<SlotContext, SlotStateId> {
   readonly id = "SPINNING" as const;
 
-  override async onEnter(ctx: SlotContext): Promise<void> {
+  override async onEnter(ctx: SlotContext, _prevState: SlotStateId | null): Promise<void> {
     ctx.reels = [null, null, null];
     ctx.spinTimer = 0;
     ctx.stopIndex = 0;

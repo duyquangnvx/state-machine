@@ -5,7 +5,7 @@ import type { TowerStateId } from "../TowerEvents.js";
 export class BuildingState extends BaseState<TowerContext, TowerStateId> {
   readonly id = "BUILDING" as const;
 
-  override onEnter(ctx: TowerContext): void {
+  override onEnter(ctx: TowerContext, _prevState: TowerStateId | null): void {
     ctx.buildTimer = 0;
   }
 

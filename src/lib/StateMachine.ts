@@ -50,12 +50,12 @@ export class StateMachine<TContext, TStateId extends string>
     if (!state) throw new StateNotFoundError(this.initialStateId);
     this.currentState = state;
     this._isStarted = true;
-    await this.currentState.onEnter(this.context);
+    await this.currentState.onEnter(this.context, null);
   }
 
   async stop(): Promise<void> {
     if (!this._isStarted || !this.currentState) return;
-    await this.currentState.onExit(this.context);
+    await this.currentState.onExit(this.context, null);
     this.currentState = null;
     this._isStarted = false;
   }
@@ -72,10 +72,10 @@ export class StateMachine<TContext, TStateId extends string>
       timestamp: Date.now(),
     };
 
-    await from.onExit(this.context);
+    await from.onExit(this.context, to.id);
     this.currentState = to;
     this.emitter.emit(change);
-    await to.onEnter(this.context);
+    await to.onEnter(this.context, from.id);
   }
 
   async update(dt: number): Promise<void> {

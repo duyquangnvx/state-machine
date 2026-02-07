@@ -7,9 +7,9 @@
  */
 export interface IState<TContext, TStateId extends string> {
   readonly id: TStateId;
-  onEnter(ctx: TContext): void | Promise<void>;
+  onEnter(ctx: TContext, prevState: TStateId | null): void | Promise<void>;
   onUpdate(ctx: TContext, dt: number): TStateId | undefined;
-  onExit(ctx: TContext): void | Promise<void>;
+  onExit(ctx: TContext, nextState: TStateId | null): void | Promise<void>;
 }
 
 /**

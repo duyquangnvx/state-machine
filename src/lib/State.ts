@@ -12,7 +12,7 @@ export abstract class BaseState<TContext, TStateId extends string>
 {
   abstract readonly id: TStateId;
 
-  onEnter(_ctx: TContext): void | Promise<void> {
+  onEnter(_ctx: TContext, _prevState: TStateId | null): void | Promise<void> {
     // no-op
   }
 
@@ -20,7 +20,7 @@ export abstract class BaseState<TContext, TStateId extends string>
     return undefined;
   }
 
-  onExit(_ctx: TContext): void | Promise<void> {
+  onExit(_ctx: TContext, _nextState: TStateId | null): void | Promise<void> {
     // no-op
   }
 }

@@ -5,7 +5,7 @@ import type { WaveStateId } from "../WaveEvents.js";
 export class PreparingState extends BaseState<WaveContext, WaveStateId> {
   readonly id = "PREPARING" as const;
 
-  override onEnter(ctx: WaveContext): void {
+  override onEnter(ctx: WaveContext, _prevState: WaveStateId | null): void {
     ctx.prepTimer = 0;
   }
 

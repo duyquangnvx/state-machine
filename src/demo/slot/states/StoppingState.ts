@@ -5,7 +5,7 @@ import type { SlotStateId } from "../SlotStateId.js";
 export class StoppingState extends BaseState<SlotContext, SlotStateId> {
   readonly id = "STOPPING" as const;
 
-  override onEnter(ctx: SlotContext): void {
+  override onEnter(ctx: SlotContext, _prevState: SlotStateId | null): void {
     ctx.stopTimer = 0;
     ctx.stopIndex = 0;
   }

@@ -239,23 +239,31 @@ describe("SlotFSM", () => {
 
   it("completes a full spin cycle", async () => {
     const deductions: number[] = [];
+    const results: string[] = [];
     const ctx = createSlotCtx({
+      spinsRemaining: 1,
       spinDuration: 0.1,
       stopInterval: 0.1,
       deductBet: async (amount) => { deductions.push(amount); },
     });
     const fsm = createSlotFSM(ctx);
+
+    // Track results before they get cleared by next spin
+    fsm.on((e) => {
+      if (e.from === "EVALUATING") results.push(ctx.lastResult);
+    });
+
     await fsm.start();
     expect(fsm.currentStateId).toBe("IDLE");
 
-    // Run enough updates to complete at least one full cycle
+    // Run enough updates to complete one full cycle
     for (let i = 0; i < 20; i++) {
       await fsm.update(0.1);
     }
 
-    expect(deductions).toEqual(expect.arrayContaining([10]));
-    // Should have passed through EVALUATING and decided win or loss
-    expect(ctx.lastResult).not.toBe("");
+    expect(deductions).toEqual([10]);
+    expect(results.length).toBe(1);
+    expect(results[0]).not.toBe("");
   });
 
   it("records state transitions in history", async () => {

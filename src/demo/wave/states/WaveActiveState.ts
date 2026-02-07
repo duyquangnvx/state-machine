@@ -5,7 +5,7 @@ import type { WaveStateId } from "../WaveEvents.js";
 export class WaveActiveState extends BaseState<WaveContext, WaveStateId> {
   readonly id = "WAVE_ACTIVE" as const;
 
-  override onEnter(ctx: WaveContext): void {
+  override onEnter(ctx: WaveContext, _prevState: WaveStateId | null): void {
     ctx.currentWave += 1;
     const count = ctx.enemiesPerWave + (ctx.currentWave - 1) * 2;
     ctx.enemiesRemaining = count;

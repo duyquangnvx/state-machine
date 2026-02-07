@@ -6,7 +6,7 @@ import { distance } from "../../types.js";
 export class MovingState extends BaseState<EnemyContext, EnemyStateId> {
   readonly id = "MOVING" as const;
 
-  override onEnter(ctx: EnemyContext): void {
+  override onEnter(ctx: EnemyContext, _prevState: EnemyStateId | null): void {
     ctx.speed = ctx.baseSpeed;
   }
 

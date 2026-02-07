@@ -5,7 +5,7 @@ import type { SlotStateId } from "../SlotStateId.js";
 export class PayoutState extends BaseState<SlotContext, SlotStateId> {
   readonly id = "PAYOUT" as const;
 
-  override async onEnter(ctx: SlotContext): Promise<void> {
+  override async onEnter(ctx: SlotContext, _prevState: SlotStateId | null): Promise<void> {
     // Async mock API: credit winnings
     await ctx.creditWinnings(ctx.winAmount);
   }

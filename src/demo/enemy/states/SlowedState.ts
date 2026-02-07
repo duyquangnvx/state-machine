@@ -6,7 +6,7 @@ import { distance } from "../../types.js";
 export class SlowedState extends BaseState<EnemyContext, EnemyStateId> {
   readonly id = "SLOWED" as const;
 
-  override onEnter(ctx: EnemyContext): void {
+  override onEnter(ctx: EnemyContext, _prevState: EnemyStateId | null): void {
     ctx.slowTimer = 0;
     ctx.speed = ctx.baseSpeed * 0.5;
   }
@@ -37,7 +37,7 @@ export class SlowedState extends BaseState<EnemyContext, EnemyStateId> {
     return undefined;
   }
 
-  override onExit(ctx: EnemyContext): void {
+  override onExit(ctx: EnemyContext, _nextState: EnemyStateId | null): void {
     ctx.speed = ctx.baseSpeed;
   }
 }

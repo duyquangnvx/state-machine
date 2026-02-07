@@ -5,7 +5,7 @@ import type { EnemyStateId } from "../EnemyEvents.js";
 export class SpawningState extends BaseState<EnemyContext, EnemyStateId> {
   readonly id = "SPAWNING" as const;
 
-  override onEnter(ctx: EnemyContext): void {
+  override onEnter(ctx: EnemyContext, _prevState: EnemyStateId | null): void {
     ctx.spawnTimer = 0;
   }
 
