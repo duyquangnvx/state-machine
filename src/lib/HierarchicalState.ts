@@ -19,21 +19,20 @@ export abstract class HierarchicalState<
     ctx: TContext,
   ): StateMachineConfig<TContext, TChildStateId>;
 
-  override async onEnter(ctx: TContext, _prevState: TStateId | null): Promise<void> {
+  override onEnter(ctx: TContext, _prevState: TStateId | null): void {
     const config = this.createChildConfig(ctx);
     this.childMachine = new StateMachine(config);
-    await this.childMachine.start();
+    this.childMachine.start();
   }
 
   override onUpdate(_ctx: TContext, _dt: number): TStateId | undefined {
     // Child machine update must be called separately by the consumer
-    // since onUpdate is sync. Use the childMachine property directly
-    // or override this method to schedule the update.
+    // or override this method to call this.childMachine.update(dt).
     return undefined;
   }
 
-  override async onExit(_ctx: TContext, _nextState: TStateId | null): Promise<void> {
-    await this.childMachine?.stop();
+  override onExit(_ctx: TContext, _nextState: TStateId | null): void {
+    this.childMachine?.stop();
     this.childMachine = null;
   }
 }

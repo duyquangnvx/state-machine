@@ -23,6 +23,8 @@ function createSlotContext(): SlotContext {
     spinsRemaining: TOTAL_SPINS,
     totalSpins: TOTAL_SPINS,
     lastResult: "",
+    betPending: false,
+    creditPending: false,
 
     deductBet: async (amount: number) => {
       // Simulate API latency
@@ -58,13 +60,13 @@ function render(ctx: SlotContext, stateId: string): void {
 
 async function main(): Promise<void> {
   const fsm = createSlotFSM(ctx);
-  await fsm.start();
+  fsm.start();
 
   let lastStateId = fsm.currentStateId;
   render(ctx, lastStateId);
 
   const loop = new GameLoop(async (dt) => {
-    await fsm.update(dt);
+    fsm.update(dt);
     const currentId = fsm.currentStateId;
 
     if (currentId !== lastStateId) {

@@ -24,17 +24,17 @@ function createTowerCtx(overrides?: Partial<TowerContext>): TowerContext {
 }
 
 describe("TowerFSM", () => {
-  it("starts in BUILDING and transitions to IDLE after build completes", async () => {
+  it("starts in BUILDING and transitions to IDLE after build completes", () => {
     const ctx = createTowerCtx();
     const fsm = createTowerFSM(ctx);
-    await fsm.start();
+    fsm.start();
     expect(fsm.currentStateId).toBe("BUILDING");
 
-    for (let i = 0; i < 11; i++) await fsm.update(0.1);
+    for (let i = 0; i < 11; i++) fsm.update(0.1);
     expect(fsm.currentStateId).toBe("IDLE");
   });
 
-  it("transitions IDLE -> TARGETING -> ATTACKING when enemy in range", async () => {
+  it("transitions IDLE -> TARGETING -> ATTACKING when enemy in range", () => {
     const ctx = createTowerCtx({
       buildDuration: 0,
       findNearestEnemy: () => ({
@@ -44,18 +44,18 @@ describe("TowerFSM", () => {
       }),
     });
     const fsm = createTowerFSM(ctx);
-    await fsm.start();
-    await fsm.update(0.1); // build -> IDLE
+    fsm.start();
+    fsm.update(0.1); // build -> IDLE
 
-    await fsm.update(0.1); // IDLE finds enemy -> TARGETING
+    fsm.update(0.1); // IDLE finds enemy -> TARGETING
     expect(fsm.currentStateId).toBe("TARGETING");
 
-    await fsm.update(0.1); // TARGETING acquires -> ATTACKING
+    fsm.update(0.1); // TARGETING acquires -> ATTACKING
     expect(fsm.currentStateId).toBe("ATTACKING");
     expect(ctx.targetEnemyId).toBe(42);
   });
 
-  it("returns to IDLE when no enemies in range", async () => {
+  it("returns to IDLE when no enemies in range", () => {
     let hasEnemy = true;
     const ctx = createTowerCtx({
       buildDuration: 0,
@@ -63,17 +63,17 @@ describe("TowerFSM", () => {
         hasEnemy ? { id: 1, position: { x: 5, y: 6 }, hp: 100 } : null,
     });
     const fsm = createTowerFSM(ctx);
-    await fsm.start();
-    await fsm.update(0.1); // build -> IDLE
-    await fsm.update(0.1); // -> TARGETING
-    await fsm.update(0.1); // -> ATTACKING
+    fsm.start();
+    fsm.update(0.1); // build -> IDLE
+    fsm.update(0.1); // -> TARGETING
+    fsm.update(0.1); // -> ATTACKING
 
     hasEnemy = false;
-    for (let i = 0; i < 10; i++) await fsm.update(0.1);
+    for (let i = 0; i < 10; i++) fsm.update(0.1);
     expect(fsm.currentStateId).toBe("IDLE");
   });
 
-  it("deals damage on attack complete", async () => {
+  it("deals damage on attack complete", () => {
     const damages: { id: number; dmg: number }[] = [];
     const ctx = createTowerCtx({
       buildDuration: 0,
@@ -86,50 +86,50 @@ describe("TowerFSM", () => {
       dealDamageToEnemy: (id, dmg) => damages.push({ id, dmg }),
     });
     const fsm = createTowerFSM(ctx);
-    await fsm.start();
-    await fsm.update(0.1); // build -> IDLE
-    await fsm.update(0.1); // -> TARGETING
-    await fsm.update(0.1); // -> ATTACKING
+    fsm.start();
+    fsm.update(0.1); // build -> IDLE
+    fsm.update(0.1); // -> TARGETING
+    fsm.update(0.1); // -> ATTACKING
 
-    for (let i = 0; i < 3; i++) await fsm.update(0.1);
+    for (let i = 0; i < 3; i++) fsm.update(0.1);
     expect(damages.length).toBeGreaterThanOrEqual(1);
     expect(damages[0]).toEqual({ id: 7, dmg: 25 });
   });
 
-  it("transitions to UPGRADING from IDLE via transitionTo", async () => {
+  it("transitions to UPGRADING from IDLE via transitionTo", () => {
     const ctx = createTowerCtx({ buildDuration: 0 });
     const fsm = createTowerFSM(ctx);
-    await fsm.start();
-    await fsm.update(0.1); // build -> IDLE
+    fsm.start();
+    fsm.update(0.1); // build -> IDLE
 
-    await fsm.transitionTo("UPGRADING");
+    fsm.transitionTo("UPGRADING");
     expect(fsm.currentStateId).toBe("UPGRADING");
 
-    for (let i = 0; i < 25; i++) await fsm.update(0.1);
+    for (let i = 0; i < 25; i++) fsm.update(0.1);
     expect(fsm.currentStateId).toBe("IDLE");
     expect(ctx.level).toBe(2);
     expect(ctx.damage).toBe(37);
   });
 
-  it("transitions to DESTROYED when hp <= 0 during IDLE update", async () => {
+  it("transitions to DESTROYED when hp <= 0 during IDLE update", () => {
     const ctx = createTowerCtx({ buildDuration: 0 });
     const fsm = createTowerFSM(ctx);
-    await fsm.start();
-    await fsm.update(0.1); // build -> IDLE
+    fsm.start();
+    fsm.update(0.1); // build -> IDLE
 
     ctx.hp = 0;
-    await fsm.update(0.1);
+    fsm.update(0.1);
     expect(fsm.currentStateId).toBe("DESTROYED");
   });
 
-  it("stays IDLE when hp > 0", async () => {
+  it("stays IDLE when hp > 0", () => {
     const ctx = createTowerCtx({ buildDuration: 0 });
     const fsm = createTowerFSM(ctx);
-    await fsm.start();
-    await fsm.update(0.1);
+    fsm.start();
+    fsm.update(0.1);
 
     ctx.hp = 50;
-    await fsm.update(0.1);
+    fsm.update(0.1);
     expect(fsm.currentStateId).toBe("IDLE");
   });
 });

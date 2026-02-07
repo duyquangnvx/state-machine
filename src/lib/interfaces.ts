@@ -2,15 +2,15 @@
  * A single state in the machine.
  * TContext is shared mutable data, TStateId identifies states.
  *
- * onEnter/onExit may be async (e.g. API calls, data loading).
- * onUpdate stays sync — runs every tick, should be fast.
+ * All lifecycle hooks are synchronous. Model async work as its own
+ * state that polls for completion in onUpdate.
  */
 export interface IState<TContext, TStateId extends string> {
   readonly id: TStateId;
   canTransitionTo(targetState: TStateId, ctx: TContext): boolean;
-  onEnter(ctx: TContext, prevState: TStateId | null): void | Promise<void>;
+  onEnter(ctx: TContext, prevState: TStateId | null): void;
   onUpdate(ctx: TContext, dt: number): TStateId | undefined;
-  onExit(ctx: TContext, nextState: TStateId | null): void | Promise<void>;
+  onExit(ctx: TContext, nextState: TStateId | null): void;
 }
 
 /**
@@ -39,9 +39,9 @@ export interface IStateMachine<TContext, TStateId extends string> {
   readonly currentStateId: TStateId;
   readonly context: TContext;
   readonly isStarted: boolean;
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  transitionTo(stateId: TStateId): Promise<void>;
-  update(dt: number): Promise<void>;
+  start(): void;
+  stop(): void;
+  transitionTo(stateId: TStateId): void;
+  update(dt: number): void;
   getHistory(): ReadonlyArray<StateChangeEvent<TStateId>>;
 }

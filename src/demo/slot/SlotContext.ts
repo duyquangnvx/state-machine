@@ -14,6 +14,10 @@ export interface SlotContext {
   totalSpins: number;
   lastResult: string;
 
+  // Async polling flags
+  betPending: boolean;
+  creditPending: boolean;
+
   // Async mock API callbacks
   deductBet: (amount: number) => Promise<void>;
   creditWinnings: (amount: number) => Promise<void>;

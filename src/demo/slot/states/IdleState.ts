@@ -7,7 +7,7 @@ export class IdleState extends BaseState<SlotContext, SlotStateId> {
 
   override onUpdate(ctx: SlotContext, _dt: number): SlotStateId | undefined {
     if (ctx.spinsRemaining > 0 && ctx.balance >= ctx.betAmount) {
-      return "SPINNING";
+      return "DEDUCTING_BET";
     }
     return undefined;
   }

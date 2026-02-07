@@ -76,7 +76,7 @@ function onEnemyDeath(_enemyId: number): void {
   waveCtx.score += 10;
 }
 
-async function spawnWaveEnemies(wave: number, count: number): Promise<void> {
+function spawnWaveEnemies(wave: number, count: number): void {
   for (let i = 0; i < count; i++) {
     const id = nextEnemyId++;
     const ctx: EnemyContext = {
@@ -101,14 +101,14 @@ async function spawnWaveEnemies(wave: number, count: number): Promise<void> {
       onEnemyDeath,
     };
     const fsm = createEnemyFSM(ctx);
-    await fsm.start();
+    fsm.start();
     enemies.push({ ctx, fsm });
   }
 }
 
 // ─── Create Towers ────────────────────────────────────
 
-async function createTower(id: number, pos: Position): Promise<TowerInstance> {
+function createTower(id: number, pos: Position): TowerInstance {
   const ctx: TowerContext = {
     id,
     position: pos,
@@ -128,7 +128,7 @@ async function createTower(id: number, pos: Position): Promise<TowerInstance> {
     dealDamageToEnemy,
   };
   const fsm = createTowerFSM(ctx);
-  await fsm.start();
+  fsm.start();
   return { ctx, fsm };
 }
 
@@ -181,24 +181,24 @@ function render(tick: number, waveFSM: StateMachine<WaveContext, WaveStateId>): 
 
 const MAX_TICKS = 200;
 
-async function main(): Promise<void> {
-  towers.push(await createTower(0, { x: 3, y: 3 }));
-  towers.push(await createTower(1, { x: 5, y: 3 }));
-  towers.push(await createTower(2, { x: 8, y: 3 }));
+function main(): void {
+  towers.push(createTower(0, { x: 3, y: 3 }));
+  towers.push(createTower(1, { x: 5, y: 3 }));
+  towers.push(createTower(2, { x: 8, y: 3 }));
 
   const waveFSM = createWaveFSM(waveCtx);
-  await waveFSM.start();
+  waveFSM.start();
 
-  const loop = new GameLoop(async (dt, tick) => {
-    await waveFSM.update(dt);
+  const loop = new GameLoop((dt, tick) => {
+    waveFSM.update(dt);
 
     for (const t of towers) {
-      if (t.fsm.isStarted) await t.fsm.update(dt);
+      if (t.fsm.isStarted) t.fsm.update(dt);
     }
 
     for (const e of enemies) {
       if (e.fsm.isStarted && e.fsm.currentStateId !== "DEAD") {
-        await e.fsm.update(dt);
+        e.fsm.update(dt);
       }
     }
 

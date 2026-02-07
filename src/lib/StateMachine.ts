@@ -48,23 +48,23 @@ export class StateMachine<TContext, TStateId extends string>
     return this._isStarted;
   }
 
-  async start(): Promise<void> {
+  start(): void {
     if (this._isStarted) return;
     const state = this.stateMap.get(this.initialStateId);
     if (!state) throw new StateNotFoundError(this.initialStateId);
     this.currentState = state;
     this._isStarted = true;
-    await this.currentState.onEnter(this.context, null);
+    this.currentState.onEnter(this.context, null);
   }
 
-  async stop(): Promise<void> {
+  stop(): void {
     if (!this._isStarted || !this.currentState) return;
-    await this.currentState.onExit(this.context, null);
+    this.currentState.onExit(this.context, null);
     this.currentState = null;
     this._isStarted = false;
   }
 
-  async transitionTo(stateId: TStateId): Promise<void> {
+  transitionTo(stateId: TStateId): void {
     if (!this.currentState) throw new MachineNotStartedError();
     const to = this.stateMap.get(stateId);
     if (!to) throw new StateNotFoundError(stateId);
@@ -80,17 +80,17 @@ export class StateMachine<TContext, TStateId extends string>
       timestamp: Date.now(),
     };
 
-    await from.onExit(this.context, to.id);
+    from.onExit(this.context, to.id);
     this.currentState = to;
     this.emitter.emit(change);
-    await to.onEnter(this.context, from.id);
+    to.onEnter(this.context, from.id);
   }
 
-  async update(dt: number): Promise<void> {
+  update(dt: number): void {
     if (!this.currentState) throw new MachineNotStartedError();
     const next = this.currentState.onUpdate(this.context, dt);
     if (next) {
-      await this.transitionTo(next);
+      this.transitionTo(next);
     }
   }
 

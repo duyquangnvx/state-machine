@@ -1,11 +1,11 @@
 # state-machine
 
-A generic, type-safe finite state machine library for TypeScript with async lifecycle hooks, transition guards, hierarchical states, event history, and a tick-based update loop.
+A generic, type-safe finite state machine library for TypeScript with synchronous lifecycle hooks, transition guards, hierarchical states, event history, and a tick-based update loop.
 
 ## Features
 
 - **Fully generic** — `StateMachine<TContext, TStateId>` works with any context and state ID types
-- **Async lifecycle** — `onEnter` / `onExit` can be `async` (API calls, loading, etc.)
+- **Synchronous lifecycle** — `onEnter` / `onExit` / `onUpdate` are all sync for deterministic state at every moment
 - **Transition guards** — `canTransitionTo(target, ctx)` lets each state control allowed transitions
 - **Tick-based updates** — `onUpdate(ctx, dt)` runs every frame/tick; return a state ID to auto-transition
 - **Hierarchical states** — `HierarchicalState` embeds a nested state machine inside a parent state
@@ -45,10 +45,6 @@ class IdleState extends BaseState<MyContext, MyStateId> {
 class LoadingState extends BaseState<MyContext, MyStateId> {
   readonly id = "loading" as const;
 
-  override async onEnter(ctx: MyContext, prevState: MyStateId | null): Promise<void> {
-    ctx.data = await fetchData(); // async is supported
-  }
-
   override onUpdate(): MyStateId | undefined {
     return "ready";
   }
@@ -71,10 +67,10 @@ const sm = new StateMachine<MyContext, MyStateId>({
   historySize: 50, // optional, defaults to 100
 });
 
-await sm.start();            // enters "idle", calls onEnter
-await sm.update(0.016);      // calls onUpdate, may auto-transition
-await sm.transitionTo("ready"); // explicit transition
-await sm.stop();             // exits current state, calls onExit
+sm.start();            // enters "idle", calls onEnter
+sm.update(0.016);      // calls onUpdate, may auto-transition
+sm.transitionTo("ready"); // explicit transition
+sm.stop();             // exits current state, calls onExit
 ```
 
 ### Transition guards
@@ -104,16 +100,51 @@ sm.getHistory(); // ReadonlyArray<StateChangeEvent<MyStateId>>
 unsub();         // stop listening
 ```
 
+### Async work as a state
+
+The state machine is fully synchronous — `onEnter`, `onExit`, and `onUpdate` all return `void`. This ensures the machine is always in exactly one definite state at any moment, which is critical for game loops and real-time systems.
+
+To handle async operations (API calls, loading, etc.), **model the async work as its own state** that polls for completion:
+
+```ts
+type MyStateId = "IDLE" | "LOADING" | "READY";
+
+interface MyContext {
+  loading: boolean;
+  data: string | null;
+  fetchData: () => Promise<string>;
+}
+
+class LoadingState extends BaseState<MyContext, MyStateId> {
+  readonly id = "LOADING" as const;
+
+  override onEnter(ctx: MyContext): void {
+    ctx.loading = true;
+    ctx.fetchData().then((data) => {
+      ctx.data = data;
+      ctx.loading = false;
+    });
+  }
+
+  override onUpdate(ctx: MyContext): MyStateId | undefined {
+    if (!ctx.loading) return "READY";
+    return undefined;
+  }
+}
+```
+
+This pattern keeps the state machine synchronous while still supporting async operations. The state machine ticks on each frame/update, and the loading state simply polls until the async work completes.
+
 ## API
 
 ### `StateMachine<TContext, TStateId>`
 
 | Method / Property | Description |
 |---|---|
-| `start()` | Enter the initial state. Idempotent. |
-| `stop()` | Exit the current state and shut down. |
-| `transitionTo(stateId)` | Transition to a specific state (checks guard). |
-| `update(dt)` | Tick the current state; auto-transitions if `onUpdate` returns a state ID. |
+| `start(): void` | Enter the initial state. Idempotent. |
+| `stop(): void` | Exit the current state and shut down. |
+| `transitionTo(stateId): void` | Transition to a specific state (checks guard). |
+| `update(dt): void` | Tick the current state; auto-transitions if `onUpdate` returns a state ID. |
 | `on(listener)` | Subscribe to state changes. Returns unsubscribe function. |
 | `getHistory()` | Get the bounded transition history. |
 | `currentStateId` | The active state's ID. Throws if not started. |
@@ -125,9 +156,9 @@ unsub();         // stop listening
 | Hook | Signature | Notes |
 |---|---|---|
 | `canTransitionTo` | `(target, ctx) => boolean` | Sync guard. Default: `true`. |
-| `onEnter` | `(ctx, prevState) => void \| Promise<void>` | Called when entering. `prevState` is `null` on `start()`. |
-| `onUpdate` | `(ctx, dt) => TStateId \| undefined` | Sync. Return a state ID to auto-transition. |
-| `onExit` | `(ctx, nextState) => void \| Promise<void>` | Called when leaving. `nextState` is `null` on `stop()`. |
+| `onEnter` | `(ctx, prevState) => void` | Called when entering. `prevState` is `null` on `start()`. |
+| `onUpdate` | `(ctx, dt) => TStateId \| undefined` | Return a state ID to auto-transition. |
+| `onExit` | `(ctx, nextState) => void` | Called when leaving. `nextState` is `null` on `stop()`. |
 
 ### `HierarchicalState<TContext, TParentId, TChildId>`
 
@@ -159,12 +190,12 @@ npm run build && npm run demo
 
 ### Slot Machine
 
-Demonstrates async `onEnter` for simulated API calls (bet deduction, payout crediting).
+Demonstrates the "async work as a state" pattern — API calls (bet deduction, payout crediting) are modeled as dedicated states that poll for completion.
 
 ```
-IDLE -> SPINNING -> STOPPING -> EVALUATING -> PAYOUT -> IDLE
-                                    |
-                                    +--> IDLE (no win)
+IDLE -> DEDUCTING_BET -> SPINNING -> STOPPING -> EVALUATING -> CREDITING_WIN -> IDLE
+                                                     |
+                                                     +--> IDLE (no win)
 ```
 
 ```bash
