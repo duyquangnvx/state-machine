@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc",
     "demo": "node dist/demo/main.js",
+    "demo:slot": "node dist/demo/slot-main.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "clean": "rimraf dist"
   },
