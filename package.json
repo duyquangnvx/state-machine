@@ -1,6 +1,6 @@
 {
   "name": "@duyquangnvx/state-machine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generic, type-safe finite state machine library for TypeScript",
   "type": "module",
   "exports": {
@@ -18,10 +18,20 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "ISC",
-  "keywords": ["state-machine", "fsm", "typescript", "game", "state"],
+  "keywords": [
+    "state-machine",
+    "fsm",
+    "typescript",
+    "game",
+    "state"
+  ],
   "scripts": {
     "build": "tsup",
     "build:demo": "tsc",
