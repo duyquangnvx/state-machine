@@ -1,22 +1,42 @@
 {
-  "name": "state-machine",
-  "version": "1.0.0",
-  "description": "Generic TypeScript state machine library with tower defense demo",
+  "name": "@duyquangnvx/state-machine",
+  "version": "0.1.0",
+  "description": "Generic, type-safe finite state machine library for TypeScript",
   "type": "module",
-  "main": "dist/lib/index.js",
-  "types": "dist/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "publishConfig": { "access": "public" },
+  "license": "ISC",
+  "keywords": ["state-machine", "fsm", "typescript", "game", "state"],
   "scripts": {
-    "build": "tsc",
-    "demo": "node dist/demo/main.js",
-    "demo:slot": "node dist/demo/slot-main.js",
+    "build": "tsup",
+    "build:demo": "tsc",
+    "demo": "npm run build:demo && node dist/demo/main.js",
+    "demo:slot": "npm run build:demo && node dist/demo/slot-main.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
     "@types/jest": "^29.5.0",
+    "@types/node": "^22.0.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.0",
-    "@types/node": "^22.0.0"
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.0"
   }
 }
