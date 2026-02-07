@@ -107,26 +107,26 @@ describe("StateMachine", () => {
   });
 
   describe("start / stop", () => {
-    it("enters initial state on start", () => {
+    it("enters initial state on start", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
+      await sm.start();
       expect(sm.isStarted).toBe(true);
       expect(sm.currentStateId).toBe("idle");
       expect(sm.context.log).toContain("enter:idle");
     });
 
-    it("is idempotent on double start", () => {
+    it("is idempotent on double start", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
-      sm.start();
+      await sm.start();
+      await sm.start();
       expect(sm.context.log.filter((l) => l === "enter:idle")).toHaveLength(1);
     });
 
-    it("exits current state on stop", () => {
+    it("exits current state on stop", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
-      sm.transitionTo("walking");
-      sm.stop();
+      await sm.start();
+      await sm.transitionTo("walking");
+      await sm.stop();
       expect(sm.isStarted).toBe(false);
       expect(sm.context.log).toContain("exit:walking");
     });
@@ -135,68 +135,122 @@ describe("StateMachine", () => {
       const sm = new StateMachine(createConfig());
       expect(() => sm.currentStateId).toThrow(MachineNotStartedError);
     });
+
+    it("awaits async onEnter", async () => {
+      class AsyncIdleState extends BaseState<TestContext, TestStateId> {
+        readonly id = "idle" as const;
+        override async onEnter(ctx: TestContext): Promise<void> {
+          await new Promise((r) => setTimeout(r, 10));
+          ctx.log.push("async:enter:idle");
+        }
+      }
+      const sm = new StateMachine(
+        createConfig({
+          states: [
+            new AsyncIdleState(),
+            new WalkingState(),
+            new RunningState(),
+            new StoppedState(),
+          ],
+        }),
+      );
+      await sm.start();
+      expect(sm.context.log).toContain("async:enter:idle");
+    });
   });
 
   describe("transitionTo()", () => {
-    it("transitions to target state", () => {
+    it("transitions to target state", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
-      sm.transitionTo("walking");
+      await sm.start();
+      await sm.transitionTo("walking");
       expect(sm.currentStateId).toBe("walking");
     });
 
-    it("throws on unknown state", () => {
+    it("throws on unknown state", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
-      expect(() => sm.transitionTo("flying" as TestStateId)).toThrow(
+      await sm.start();
+      await expect(sm.transitionTo("flying" as TestStateId)).rejects.toThrow(
         StateNotFoundError,
       );
     });
 
-    it("calls onExit then onEnter in order", () => {
+    it("calls onExit then onEnter in order", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
+      await sm.start();
       sm.context.log = [];
-      sm.transitionTo("walking");
+      await sm.transitionTo("walking");
       expect(sm.context.log).toEqual(["exit:idle", "enter:walking"]);
     });
 
-    it("throws if machine not started", () => {
+    it("throws if machine not started", async () => {
       const sm = new StateMachine(createConfig());
-      expect(() => sm.transitionTo("walking")).toThrow(MachineNotStartedError);
+      await expect(sm.transitionTo("walking")).rejects.toThrow(
+        MachineNotStartedError,
+      );
+    });
+
+    it("awaits async onExit and onEnter", async () => {
+      const order: string[] = [];
+      class AsyncIdle extends BaseState<TestContext, TestStateId> {
+        readonly id = "idle" as const;
+        override async onExit(): Promise<void> {
+          await new Promise((r) => setTimeout(r, 10));
+          order.push("exit:idle");
+        }
+      }
+      class AsyncWalking extends BaseState<TestContext, TestStateId> {
+        readonly id = "walking" as const;
+        override async onEnter(): Promise<void> {
+          await new Promise((r) => setTimeout(r, 10));
+          order.push("enter:walking");
+        }
+      }
+      const sm = new StateMachine(
+        createConfig({
+          states: [
+            new AsyncIdle(),
+            new AsyncWalking(),
+            new RunningState(),
+            new StoppedState(),
+          ],
+        }),
+      );
+      await sm.start();
+      await sm.transitionTo("walking");
+      expect(order).toEqual(["exit:idle", "enter:walking"]);
     });
   });
 
   describe("update()", () => {
-    it("calls onUpdate on current state", () => {
+    it("calls onUpdate on current state", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
-      sm.transitionTo("walking");
-      sm.update(1);
-      expect(sm.context.speed).toBe(2); // 1 (enter) + 1 (update)
+      await sm.start();
+      await sm.transitionTo("walking");
+      await sm.update(1);
+      expect(sm.context.speed).toBe(2);
     });
 
-    it("auto-transitions when onUpdate returns a state id", () => {
+    it("auto-transitions when onUpdate returns a state id", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
-      sm.transitionTo("walking");
-      // speed starts at 1, each update adds dt
-      sm.update(4); // speed=5 -> returns "running"
+      await sm.start();
+      await sm.transitionTo("walking");
+      await sm.update(4); // speed=5 -> returns "running"
       expect(sm.currentStateId).toBe("running");
     });
 
-    it("throws if machine not started", () => {
+    it("throws if machine not started", async () => {
       const sm = new StateMachine(createConfig());
-      expect(() => sm.update(1)).toThrow(MachineNotStartedError);
+      await expect(sm.update(1)).rejects.toThrow(MachineNotStartedError);
     });
   });
 
   describe("history & events", () => {
-    it("records state changes in history", () => {
+    it("records state changes in history", async () => {
       const sm = new StateMachine(createConfig());
-      sm.start();
-      sm.transitionTo("walking");
-      sm.transitionTo("stopped");
+      await sm.start();
+      await sm.transitionTo("walking");
+      await sm.transitionTo("stopped");
 
       const history = sm.getHistory();
       expect(history).toHaveLength(2);
@@ -206,33 +260,33 @@ describe("StateMachine", () => {
       expect(history[1]!.to).toBe("stopped");
     });
 
-    it("emits events to listeners", () => {
+    it("emits events to listeners", async () => {
       const sm = new StateMachine(createConfig());
       const events: string[] = [];
       sm.on((e) => events.push(`${e.from}->${e.to}`));
-      sm.start();
-      sm.transitionTo("walking");
-      sm.transitionTo("stopped");
+      await sm.start();
+      await sm.transitionTo("walking");
+      await sm.transitionTo("stopped");
       expect(events).toEqual(["idle->walking", "walking->stopped"]);
     });
 
-    it("unsubscribe works", () => {
+    it("unsubscribe works", async () => {
       const sm = new StateMachine(createConfig());
       const events: string[] = [];
       const unsub = sm.on((e) => events.push(`${e.from}->${e.to}`));
-      sm.start();
-      sm.transitionTo("walking");
+      await sm.start();
+      await sm.transitionTo("walking");
       unsub();
-      sm.transitionTo("stopped");
+      await sm.transitionTo("stopped");
       expect(events).toEqual(["idle->walking"]);
     });
 
-    it("respects bounded history", () => {
+    it("respects bounded history", async () => {
       const sm = new StateMachine(createConfig({ historySize: 2 }));
-      sm.start();
-      sm.transitionTo("walking");
-      sm.transitionTo("stopped");
-      sm.transitionTo("idle");
+      await sm.start();
+      await sm.transitionTo("walking");
+      await sm.transitionTo("stopped");
+      await sm.transitionTo("idle");
       expect(sm.getHistory()).toHaveLength(2);
       expect(sm.getHistory()[0]!.from).toBe("walking");
     });
@@ -274,17 +328,17 @@ describe("StateMachine", () => {
       readonly id = "done" as const;
     }
 
-    it("starts and stops child machine with parent state", () => {
+    it("starts and stops child machine with parent state", async () => {
       const ctx: TestContext = { speed: 0, log: [] };
       const sm = new StateMachine<TestContext, ParentId>({
         states: [new ActiveState(), new DoneState()],
         initialState: "active",
         context: ctx,
       });
-      sm.start();
+      await sm.start();
       expect(ctx.log).toContain("enter:child:a");
 
-      sm.transitionTo("done");
+      await sm.transitionTo("done");
       expect(ctx.log).toContain("exit:child:a");
     });
   });

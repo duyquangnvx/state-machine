@@ -30,28 +30,28 @@ function createEnemyCtx(overrides?: Partial<EnemyContext>): EnemyContext {
 }
 
 describe("EnemyFSM", () => {
-  it("starts in SPAWNING and moves to MOVING after spawn duration", () => {
+  it("starts in SPAWNING and moves to MOVING after spawn duration", async () => {
     const ctx = createEnemyCtx();
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
+    await fsm.start();
     expect(fsm.currentStateId).toBe("SPAWNING");
 
-    for (let i = 0; i < 6; i++) fsm.update(0.1);
+    for (let i = 0; i < 6; i++) await fsm.update(0.1);
     expect(fsm.currentStateId).toBe("MOVING");
   });
 
-  it("moves along path toward waypoints", () => {
+  it("moves along path toward waypoints", async () => {
     const ctx = createEnemyCtx({ spawnDuration: 0 });
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
-    fsm.update(0.1); // spawn completes
+    await fsm.start();
+    await fsm.update(0.1); // spawn completes
 
     const startX = ctx.position.x;
-    fsm.update(0.5);
+    await fsm.update(0.5);
     expect(ctx.position.x).toBeGreaterThan(startX);
   });
 
-  it("transitions to ATTACKING when reaching end of path", () => {
+  it("transitions to ATTACKING when reaching end of path", async () => {
     const ctx = createEnemyCtx({
       spawnDuration: 0,
       speed: 100,
@@ -59,13 +59,13 @@ describe("EnemyFSM", () => {
       path: [{ x: 1, y: 0 }],
     });
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
-    fsm.update(0.1); // spawn completes
-    fsm.update(0.1); // reach end
+    await fsm.start();
+    await fsm.update(0.1); // spawn
+    await fsm.update(0.1); // reach end
     expect(fsm.currentStateId).toBe("ATTACKING");
   });
 
-  it("deals damage to base while ATTACKING", () => {
+  it("deals damage to base while ATTACKING", async () => {
     const damages: number[] = [];
     const ctx = createEnemyCtx({
       spawnDuration: 0,
@@ -76,32 +76,31 @@ describe("EnemyFSM", () => {
       dealDamageToBase: (d) => damages.push(d),
     });
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
-    fsm.update(0.1); // spawn
-    fsm.update(0.1); // reach end -> ATTACKING
+    await fsm.start();
+    await fsm.update(0.1); // spawn
+    await fsm.update(0.1); // reach end -> ATTACKING
 
-    for (let i = 0; i < 3; i++) fsm.update(0.1);
+    for (let i = 0; i < 3; i++) await fsm.update(0.1);
     expect(damages.length).toBeGreaterThanOrEqual(1);
     expect(damages[0]).toBe(10);
   });
 
-  it("transitions MOVING -> SLOWED -> MOVING via transitionTo", () => {
+  it("transitions MOVING -> SLOWED -> MOVING via transitionTo", async () => {
     const ctx = createEnemyCtx({ spawnDuration: 0 });
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
-    fsm.update(0.1); // spawn completes
+    await fsm.start();
+    await fsm.update(0.1); // spawn completes
 
-    fsm.transitionTo("SLOWED");
+    await fsm.transitionTo("SLOWED");
     expect(fsm.currentStateId).toBe("SLOWED");
     expect(ctx.speed).toBe(ctx.baseSpeed * 0.5);
 
-    // Let slow expire
-    for (let i = 0; i < 25; i++) fsm.update(0.1);
+    for (let i = 0; i < 25; i++) await fsm.update(0.1);
     expect(fsm.currentStateId).toBe("MOVING");
     expect(ctx.speed).toBe(ctx.baseSpeed);
   });
 
-  it("dies on fatal damage while MOVING", () => {
+  it("dies on fatal damage while MOVING", async () => {
     const deaths: number[] = [];
     const ctx = createEnemyCtx({
       spawnDuration: 0,
@@ -109,30 +108,30 @@ describe("EnemyFSM", () => {
       onEnemyDeath: (id) => deaths.push(id),
     });
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
-    fsm.update(0.1); // spawn completes
+    await fsm.start();
+    await fsm.update(0.1); // spawn completes
 
     ctx.hp = -10;
-    fsm.update(0.1); // MOVING checks hp -> DYING
+    await fsm.update(0.1); // MOVING checks hp -> DYING
     expect(fsm.currentStateId).toBe("DYING");
 
-    for (let i = 0; i < 3; i++) fsm.update(0.1);
+    for (let i = 0; i < 3; i++) await fsm.update(0.1);
     expect(fsm.currentStateId).toBe("DEAD");
     expect(deaths).toEqual([0]);
   });
 
-  it("dies on fatal damage while SLOWED", () => {
+  it("dies on fatal damage while SLOWED", async () => {
     const ctx = createEnemyCtx({ spawnDuration: 0, deathDuration: 0.1 });
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
-    fsm.update(0.1); // spawn
-    fsm.transitionTo("SLOWED");
+    await fsm.start();
+    await fsm.update(0.1); // spawn
+    await fsm.transitionTo("SLOWED");
 
     ctx.hp = -5;
-    fsm.update(0.1); // SLOWED checks hp -> DYING
+    await fsm.update(0.1); // SLOWED checks hp -> DYING
     expect(fsm.currentStateId).toBe("DYING");
 
-    fsm.update(0.2);
+    await fsm.update(0.2);
     expect(fsm.currentStateId).toBe("DEAD");
   });
 });

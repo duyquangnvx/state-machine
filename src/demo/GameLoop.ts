@@ -1,5 +1,6 @@
 /**
  * setTimeout-based tick loop with delta time.
+ * Supports async tick callbacks — waits for completion before scheduling next tick.
  */
 export class GameLoop {
   private running = false;
@@ -8,7 +9,7 @@ export class GameLoop {
   private timerId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
-    private readonly onTick: (dt: number, tick: number) => void,
+    private readonly onTick: (dt: number, tick: number) => Promise<void> | void,
     private readonly tickRate: number = 10,
   ) {
     this.intervalMs = 1000 / tickRate;
@@ -38,11 +39,11 @@ export class GameLoop {
   }
 
   private schedule(): void {
-    this.timerId = setTimeout(() => {
+    this.timerId = setTimeout(async () => {
       if (!this.running) return;
       this.tickCount += 1;
       const dt = this.intervalMs / 1000;
-      this.onTick(dt, this.tickCount);
+      await this.onTick(dt, this.tickCount);
       if (this.running) this.schedule();
     }, this.intervalMs);
   }

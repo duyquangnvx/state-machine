@@ -76,7 +76,7 @@ function onEnemyDeath(_enemyId: number): void {
   waveCtx.score += 10;
 }
 
-function spawnWaveEnemies(wave: number, count: number): void {
+async function spawnWaveEnemies(wave: number, count: number): Promise<void> {
   for (let i = 0; i < count; i++) {
     const id = nextEnemyId++;
     const ctx: EnemyContext = {
@@ -101,14 +101,14 @@ function spawnWaveEnemies(wave: number, count: number): void {
       onEnemyDeath,
     };
     const fsm = createEnemyFSM(ctx);
-    fsm.start();
+    await fsm.start();
     enemies.push({ ctx, fsm });
   }
 }
 
 // ─── Create Towers ────────────────────────────────────
 
-function createTower(id: number, pos: Position): TowerInstance {
+async function createTower(id: number, pos: Position): Promise<TowerInstance> {
   const ctx: TowerContext = {
     id,
     position: pos,
@@ -128,13 +128,9 @@ function createTower(id: number, pos: Position): TowerInstance {
     dealDamageToEnemy,
   };
   const fsm = createTowerFSM(ctx);
-  fsm.start();
+  await fsm.start();
   return { ctx, fsm };
 }
-
-towers.push(createTower(0, { x: 3, y: 3 }));
-towers.push(createTower(1, { x: 5, y: 3 }));
-towers.push(createTower(2, { x: 8, y: 3 }));
 
 // ─── Create Wave FSM ─────────────────────────────────
 
@@ -150,12 +146,9 @@ const waveCtx: WaveContext = {
   spawnWaveEnemies,
 };
 
-const waveFSM = createWaveFSM(waveCtx);
-waveFSM.start();
-
 // ─── Render ───────────────────────────────────────────
 
-function render(tick: number): void {
+function render(tick: number, waveFSM: StateMachine<WaveContext, WaveStateId>): void {
   const waveState = waveFSM.currentStateId;
   console.log(
     `\n=== Tick ${tick} | Wave ${waveCtx.currentWave}/${waveCtx.totalWaves} | Score: ${waveCtx.score} | Base HP: ${waveCtx.baseHp} ===`,
@@ -184,36 +177,47 @@ function render(tick: number): void {
   }
 }
 
-// ─── Game Loop ────────────────────────────────────────
+// ─── Boot & Game Loop ─────────────────────────────────
 
 const MAX_TICKS = 200;
 
-const loop = new GameLoop((dt, tick) => {
-  waveFSM.update(dt);
+async function main(): Promise<void> {
+  towers.push(await createTower(0, { x: 3, y: 3 }));
+  towers.push(await createTower(1, { x: 5, y: 3 }));
+  towers.push(await createTower(2, { x: 8, y: 3 }));
 
-  for (const t of towers) {
-    if (t.fsm.isStarted) t.fsm.update(dt);
-  }
+  const waveFSM = createWaveFSM(waveCtx);
+  await waveFSM.start();
 
-  for (const e of enemies) {
-    if (e.fsm.isStarted && e.fsm.currentStateId !== "DEAD") {
-      e.fsm.update(dt);
+  const loop = new GameLoop(async (dt, tick) => {
+    await waveFSM.update(dt);
+
+    for (const t of towers) {
+      if (t.fsm.isStarted) await t.fsm.update(dt);
     }
-  }
 
-  if (tick % 5 === 0 || waveFSM.currentStateId === "GAME_OVER") {
-    render(tick);
-  }
+    for (const e of enemies) {
+      if (e.fsm.isStarted && e.fsm.currentStateId !== "DEAD") {
+        await e.fsm.update(dt);
+      }
+    }
 
-  if (waveFSM.currentStateId === "GAME_OVER" || tick >= MAX_TICKS) {
-    const won = waveCtx.baseHp > 0 && waveCtx.currentWave >= waveCtx.totalWaves;
-    console.log(
-      won
-        ? `\n*** VICTORY! Final Score: ${waveCtx.score} ***`
-        : `\n*** GAME OVER — Score: ${waveCtx.score} ***`,
-    );
-    loop.stop();
-  }
-}, 10);
+    if (tick % 5 === 0 || waveFSM.currentStateId === "GAME_OVER") {
+      render(tick, waveFSM);
+    }
 
-loop.start();
+    if (waveFSM.currentStateId === "GAME_OVER" || tick >= MAX_TICKS) {
+      const won = waveCtx.baseHp > 0 && waveCtx.currentWave >= waveCtx.totalWaves;
+      console.log(
+        won
+          ? `\n*** VICTORY! Final Score: ${waveCtx.score} ***`
+          : `\n*** GAME OVER — Score: ${waveCtx.score} ***`,
+      );
+      loop.stop();
+    }
+  }, 10);
+
+  loop.start();
+}
+
+main();

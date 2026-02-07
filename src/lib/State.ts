@@ -3,13 +3,16 @@ import type { IState } from "./interfaces.js";
 /**
  * Abstract base class providing default no-op lifecycle hooks.
  * Concrete states override only what they need.
+ *
+ * onEnter/onExit can be overridden as async when needed.
+ * onUpdate stays sync — return a state ID to trigger a transition.
  */
 export abstract class BaseState<TContext, TStateId extends string>
   implements IState<TContext, TStateId>
 {
   abstract readonly id: TStateId;
 
-  onEnter(_ctx: TContext): void {
+  onEnter(_ctx: TContext): void | Promise<void> {
     // no-op
   }
 
@@ -17,7 +20,7 @@ export abstract class BaseState<TContext, TStateId extends string>
     return undefined;
   }
 
-  onExit(_ctx: TContext): void {
+  onExit(_ctx: TContext): void | Promise<void> {
     // no-op
   }
 }
