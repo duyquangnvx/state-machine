@@ -1,12 +1,12 @@
-import { BaseState } from "../../../lib/index.js";
-import type { TowerContext } from "../TowerContext.js";
-import type { TowerStateId } from "../TowerEvents.js";
+import { BaseState } from '../../../lib/index.js';
+import type { TowerContext } from '../TowerContext.js';
+import type { TowerStateId } from '../TowerEvents.js';
 
 export class DestroyedState extends BaseState<TowerContext, TowerStateId> {
-  readonly id = "DESTROYED" as const;
+    readonly id = 'DESTROYED' as const;
 
-  override onEnter(ctx: TowerContext, _prevState: TowerStateId | null): void {
-    ctx.targetEnemyId = null;
-    ctx.hp = 0;
-  }
+    override onEnter(ctx: TowerContext, _prevState: TowerStateId | null): void {
+        ctx.targetEnemyId = null;
+        ctx.hp = 0;
+    }
 }
